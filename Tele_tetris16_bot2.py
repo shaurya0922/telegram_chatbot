@@ -28,7 +28,14 @@ class GeminiTelegramBot:
         
         # Configure Gemini
         genai.configure(api_key=self.gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        # List available models and log them
+        try:
+            available_models = genai.list_models()
+            logger.info(f"Available Gemini models: {[m.name for m in available_models]}")
+        except Exception as e:
+            logger.error(f"Error listing Gemini models: {e}")
+        # Use a valid model name here (update after checking logs)
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
         
         # Create SSL context that doesn't verify certificates (for corporate networks)
         ssl_context = ssl.create_default_context()
@@ -174,44 +181,21 @@ Just send me any message and I'll respond using Gemini AI!
     async def run(self) -> None:
         """Run the bot"""
         logger.info("Starting Gemini Telegram Bot...")
-        
-        # Initialize and start the application
-        await self.application.initialize()
-        await self.application.start()
-        await self.application.updater.start_polling()
-        
-        logger.info("Bot is running! Press Ctrl+C to stop.")
-        
-        try:
-            # Keep the bot running
-            await self.application.updater.idle()
-        except KeyboardInterrupt:
-            logger.info("Bot stopped by user")
-        finally:
-            await self.application.stop()
+        await self.application.run_polling()
 
-async def main():
-    """Main function to run the bot"""
-    
+def main():
     # Load API keys from environment variables
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-    
     if not TELEGRAM_BOT_TOKEN:
         print("❌ Please set your TELEGRAM_BOT_TOKEN in .env file or environment variables")
         return
-    
     if not GEMINI_API_KEY:
         print("❌ Please set your GEMINI_API_KEY in .env file or environment variables")
         return
-    
     # Create and run the bot
     bot = GeminiTelegramBot(TELEGRAM_BOT_TOKEN, GEMINI_API_KEY)
-    await bot.run()
+    bot.application.run_polling()
 
 if __name__ == "__main__":
-    # Run the bot
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\n👋 Bot stopped!")
+    main() 
